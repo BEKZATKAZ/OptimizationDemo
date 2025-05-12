@@ -1,0 +1,56 @@
+#pragma kernel CalculatePositionsAndUVs
+#pragma kernel CalculateIndices
+
+#include "VertexData.hlsl"
+#include "GenerationSettings.hlsl"
+#include "NoiseFunctions.hlsl"
+
+RWStructuredBuffer<VertexData> VertexBuffer;
+RWStructuredBuffer<int> IndexBuffer;
+
+uniform Texture2D<float4> Erosion : register(t0);
+uniform float2 Offset;
+
+float GetErosion(float noiseValue)
+{
+    uint2 erosionSize;
+    Erosion.GetDimensions(erosionSize.x, erosionSize.y);
+    return Erosion.Load(int3(floor(noiseValue * erosionSize.x), 0, 0), 0).r;
+}
+
+[numthreads(16, 16, 1)]
+void CalculateIndices(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= Resolution - 1 || id.y >= Resolution - 1) return;
+    
+    int index = (id.y * (Resolution - 1) + id.x) * 6;
+    int topLeft = id.y * Resolution + id.x;
+    int topRight = topLeft + 1;
+    int bottomLeft = topLeft + Resolution;
+    int bottomRight = bottomLeft + 1;
+
+    IndexBuffer[index + 0] = topLeft;
+    IndexBuffer[index + 1] = bottomLeft;
+    IndexBuffer[index + 2] = topRight;
+
+    IndexBuffer[index + 3] = topRight;
+    IndexBuffer[index + 4] = bottomLeft;
+    IndexBuffer[index + 5] = bottomRight;
+}
+
+[numthreads(16, 16, 1)]
+void CalculatePositionsAndUVs(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= Resolution || id.y >= Resolution) return;
+    
+    uint vertexIndex = id.y * Resolution + id.x;
+    
+    float x = (float)id.x / Resolution + Offset.x;
+    float z = (float)id.y / Resolution + Offset.y;
+    
+    float2 noiseInput = float2(x, z) * Frequency;
+    float y = octavedGradientNoise(noiseInput, Octaves, Persistence, FrequencyMultiplier);
+    
+    VertexBuffer[vertexIndex].Position = float3(x * Size, y * Amplitude * GetErosion(y), z * Size);
+    VertexBuffer[vertexIndex].UV = float2(id.x, id.y);
+}

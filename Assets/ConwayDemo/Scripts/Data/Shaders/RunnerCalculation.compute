@@ -1,0 +1,58 @@
+#pragma kernel RunNext
+#pragma kernel ApplyChanges
+
+#include "ConwaySettings.hlsl"
+
+StructuredBuffer<uint2> NeighborOffsets;
+RWStructuredBuffer<uint> ResultBuffer;
+RWTexture2D<float4> Texture;
+
+uint GetIndex(uint2 coords)
+{
+    return coords.y * BufferSize.x + coords.x;
+}
+
+bool HasNeighbor(uint2 coords)
+{
+    if (coords.x < 0) coords.x = BufferSize.x - 1;
+    if (coords.y < 0) coords.y = BufferSize.y - 1;
+    if (coords.x >= BufferSize.x) coords.x = 0;
+    if (coords.y >= BufferSize.y) coords.y = 0;
+    return ResultBuffer[GetIndex(coords)] & 1;
+}
+
+uint GetNeighborCount(uint2 coords)
+{
+    uint result = 0;
+    for (uint i = 0; i < NeighborOffsetCount; i++)
+    {
+        if (HasNeighbor(coords + NeighborOffsets[i])) result++;
+    }
+    return result;
+}
+
+[numthreads(16, 16, 1)]
+void RunNext(uint3 id : SV_DispatchThreadID)
+{
+    uint2 coords = id.xy;
+    uint neighborCount = GetNeighborCount(coords);
+    uint index = GetIndex(coords);
+    
+    if (neighborCount < 2 || neighborCount > 3)
+        ResultBuffer[index] &= 1;
+    
+    else if (neighborCount == 3)
+        ResultBuffer[index] = ResultBuffer[index] ? 3 : 2;
+    
+    else
+        ResultBuffer[index] = ResultBuffer[index] ? 3 : 0;
+}
+
+[numthreads(16, 16, 1)]
+void ApplyChanges(uint3 id : SV_DispatchThreadID)
+{
+    uint2 coords = id.xy;
+    uint index = GetIndex(coords);
+    ResultBuffer[index] >>= 1;
+    Texture[coords] = ResultBuffer[index] ? ActiveCellColor : DeadCellColor;
+}

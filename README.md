@@ -1,8 +1,8 @@
 # OptimizationDemo
-This project is a showcase of deep Unity optimization, featured in my Fiverr gig video. The video demonstrates real performance problems and how I solved them. No profiler tricks, no fake stats. Everything shown is reproducible. You can download the project and run it yourself to verify the results.
+This project is a showcase of deep Unity optimization, featured in my Fiverr gig video (Currently on my Fiverr gig the video might be under review). It demonstrates real performance problems and how I solved them. No profiler tricks, no fake stats. Everything shown is reproducible. You can download the project and run it yourself to verify the results.
 
 ## Overview
-I implemented **Conway's Game of Life** and **Procedural Generation** using different techniques but the same core algorithms to show how bad performance can get, and how much it can be improved. Both are CPU-heavy by default.
+I implemented **Conway's Game of Life** and **Procedural Generation** using different techniques but the same core algorithms to show how bad performance can get, and how much it can be improved. Both are CPU-heavy by default. Note that most of those mini allocations that you see in the profiler are caused by Unity itself, not by me.
 
 ### Before
 - Conway's Game Of Life: 1 FPS, +200 MB allocated per frame
@@ -10,7 +10,7 @@ I implemented **Conway's Game of Life** and **Procedural Generation** using diff
 
 ### After
 - Conway's Game Of Life: +1000 FPS, zero allocations per frame
-- Procedural Generation: +170 FPS, near-zero allocations per frame
+- Procedural Generation: +140 FPS, near-zero allocations per frame
 
 ### Key Improvements
 - Practically zero garbage collection
